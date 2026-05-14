@@ -1,0 +1,54 @@
+{
+  "name": "MXD Word Search Generator Pro",
+  "short_name": "MXD Word Search",
+  "description": "Professional word search puzzle generator with AI-powered features",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#c9a227",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%2309090b' width='512' height='512'/><text x='256' y='350' font-size='280' font-weight='900' text-anchor='middle' fill='%23c9a227'>M</text><text x='380' y='350' font-size='280' font-weight='900' text-anchor='middle' fill='%23ececf0'>X</text><text x='440' y='350' font-size='280' font-weight='900' text-anchor='middle' fill='%23ef4444'>D</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%2309090b' width='192' height='192' rx='24'/><text x='96' y='130' font-size='100' font-weight='900' text-anchor='middle' fill='%23c9a227'>M</text><text x='140' y='130' font-size='100' font-weight='900' text-anchor='middle' fill='%23ececf0'>X</text><text x='170' y='130' font-size='100' font-weight='900' text-anchor='middle' fill='%23ef4444'>D</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity", "education", "utilities"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Generate Puzzle",
+      "short_name": "Generate",
+      "description": "Create a new word search puzzle",
+      "url": "/?action=generate",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23c9a227' width='96' height='96' rx='12'/><text x='48' y='70' font-size='50' text-anchor='middle' fill='white'>⟳</text></svg>",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Bulk Export",
+      "short_name": "Export",
+      "description": "Export multiple puzzles as PDF",
+      "url": "/?action=bulk",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%2322c55e' width='96' height='96' rx='12'/><text x='48' y='70' font-size='50' text-anchor='middle' fill='white'>📄</text></svg>",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
