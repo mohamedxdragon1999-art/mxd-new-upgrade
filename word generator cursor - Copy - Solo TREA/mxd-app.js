@@ -1118,41 +1118,8 @@
     return h('div', {className:'app'},
       h(DragonBG),
       toast ? h(Toast, {msg:toast.message, type:toast.type}) : null,
-      h('main', {className:'main'},
-        h('div', {className:'pza', style:{background:normalizedTmpl.bg}},
-          h('div', {className:'pzc', style:{background:normalizedTmpl.bg, color:normalizedTmpl.tc, border:normalizedTmpl.borderStyle, fontFamily:normalizedTmpl.ff}},
-            h('input', {className:'pz-t', value:cfg.title,
-              onChange:function(e){setCfg(function(p){return Object.assign({},p,{title:e.target.value});});},
-              style:{color:normalizedTmpl.tc, fontFamily:normalizedTmpl.ff}}),
-            h(PuzzleGrid, {grid:(puzzles[page]||{}).grid||[], mask:(puzzles[page]||{}).mask||[], placements:(puzzles[page]||{}).placements||{},
-              showSol:view==='solution', solStyle:cfg.solutionStyle,
-              foundWords:foundWords, hlColor:cfg.highlightColor,
-              fontWeight:cfg.fontWeight, cellSize:cfg.cellSize,
-              onMouseDown:onMouseDown, onMouseEnter:onMouseEnter, onMouseUp:onMouseUp,
-              selCells:selCells, template:normalizedTmpl, cfg:Object.assign({},cfg,{
-                fontFamily:normalizedTmpl.ff,
-                fontColor:normalizedTmpl.tc,
-                backgroundColor:normalizedTmpl.bg,
-                accentColor:normalizedTmpl.cc,
-                decorations: normalizedTmpl.decorations
-               })
-              }),
-            puzzles.length > 0 ? h('div', {style:{display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginTop:'16px',flexWrap:'wrap'}},
-              page > 0 ? h('button', {className:'btn btn-sec', onClick:function(){setPage(page-1);setFoundWords([]);setSelCells([]);setView('puzzle');}}, '\u25C0 Prev') : null,
-              h('span', {style:{fontSize:'12px',fontWeight:'600',color:'var(--t2)',minWidth:'120px',textAlign:'center'}}, 'Puzzle ' + (page+1) + ' of ' + puzzles.length),
-              page < puzzles.length - 1 ? h('button', {className:'btn btn-sec', onClick:function(){setPage(page+1);setFoundWords([]);setSelCells([]);setView('puzzle');}}, 'Next \u25B6') : null,
-              h('button', {className:'btn', style:{background:view==='solution'?'var(--accent)':'var(--bg)',color:view==='solution'?'#fff':'var(--t1)',border:'1px solid var(--border)',borderRadius:'6px',padding:'6px 14px',fontSize:'12px',fontWeight:'600',cursor:'pointer'}, onClick:function(){setView(view==='solution'?'puzzle':'solution');}}, view==='solution'?'Hide Solution':'Show Solution')
-            ) : null,
-            window.AI_THEMES ? h('button', {className:'chip', onClick:function(){
-              var k = Object.keys(window.AI_THEMES);
-              var next = k[Math.floor(Math.random()*k.length)];
-              setCurrentTheme(next);
-              setWordText(window.AI_THEMES[next].join('\n'));
-            }}, '\uD83C\uDFB2 Random Theme') : null
-          )
-        )
-      ),
-      h('aside', {className:'sb'},
+      h('div', {className:'workspace'},
+        h('aside', {className:'sb'},
         h('div', {className:'sb-hd'},
           h('div', {className:'sb-logo'}, '\uD83D\uDD0D'),
           h('div', {className:'sb-brand'},
@@ -1168,6 +1135,41 @@
             h('span', {style:{width:'8px',height:'8px',borderRadius:'50%',background:connDegraded?'#f59e0b':isOnline?'#10b981':'#ef4444',display:'inline-block',flexShrink:'0'}}),
             h('span', null, connDegraded ? 'Slow' : isOnline ? 'Online' : 'Offline'),
             puzzles.length > 0 ? h('span', {style:{marginLeft:'auto'}}, puzzles.length + ' puzzle(s)') : null
+          )
+        )
+      ),
+        h('main', {className:'main'},
+          h('div', {className:'pza', style:{background:normalizedTmpl.bg}},
+            h('div', {className:'pzc', style:{background:normalizedTmpl.bg, color:normalizedTmpl.tc, border:normalizedTmpl.borderStyle, fontFamily:normalizedTmpl.ff}},
+              h('input', {className:'pz-t', value:cfg.title,
+                onChange:function(e){setCfg(function(p){return Object.assign({},p,{title:e.target.value});});},
+                style:{color:normalizedTmpl.tc, fontFamily:normalizedTmpl.ff}}),
+              h(PuzzleGrid, {grid:(puzzles[page]||{}).grid||[], mask:(puzzles[page]||{}).mask||[], placements:(puzzles[page]||{}).placements||{},
+                showSol:view==='solution', solStyle:cfg.solutionStyle,
+                foundWords:foundWords, hlColor:cfg.highlightColor,
+                fontWeight:cfg.fontWeight, cellSize:cfg.cellSize,
+                onMouseDown:onMouseDown, onMouseEnter:onMouseEnter, onMouseUp:onMouseUp,
+                selCells:selCells, template:normalizedTmpl, cfg:Object.assign({},cfg,{
+                  fontFamily:normalizedTmpl.ff,
+                  fontColor:normalizedTmpl.tc,
+                  backgroundColor:normalizedTmpl.bg,
+                  accentColor:normalizedTmpl.cc,
+                  decorations: normalizedTmpl.decorations
+                 })
+                }),
+              puzzles.length > 0 ? h('div', {style:{display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginTop:'16px',flexWrap:'wrap'}},
+                page > 0 ? h('button', {className:'btn btn-sec', onClick:function(){setPage(page-1);setFoundWords([]);setSelCells([]);setView('puzzle');}}, '\u25C0 Prev') : null,
+                h('span', {style:{fontSize:'12px',fontWeight:'600',color:'var(--t2)',minWidth:'120px',textAlign:'center'}}, 'Puzzle ' + (page+1) + ' of ' + puzzles.length),
+                page < puzzles.length - 1 ? h('button', {className:'btn btn-sec', onClick:function(){setPage(page+1);setFoundWords([]);setSelCells([]);setView('puzzle');}}, 'Next \u25B6') : null,
+                h('button', {className:'btn', style:{background:view==='solution'?'var(--accent)':'var(--bg)',color:view==='solution'?'#fff':'var(--t1)',border:'1px solid var(--border)',borderRadius:'6px',padding:'6px 14px',fontSize:'12px',fontWeight:'600',cursor:'pointer'}, onClick:function(){setView(view==='solution'?'puzzle':'solution');}}, view==='solution'?'Hide Solution':'Show Solution')
+              ) : null,
+              window.AI_THEMES ? h('button', {className:'chip', onClick:function(){
+                var k = Object.keys(window.AI_THEMES);
+                var next = k[Math.floor(Math.random()*k.length)];
+                setCurrentTheme(next);
+                setWordText(window.AI_THEMES[next].join('\n'));
+              }}, '\uD83C\uDFB2 Random Theme') : null
+            )
           )
         )
       )

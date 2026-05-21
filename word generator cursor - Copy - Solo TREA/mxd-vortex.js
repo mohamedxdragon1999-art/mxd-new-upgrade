@@ -5269,7 +5269,7 @@
     checkInterval: 30000,
     retryDelay: 30000,
     maxRetryDelay: 480000,
-    pingEndpoint: window.location.protocol === 'file:' ? null : '/health',
+    pingEndpoint: window.location.protocol === 'file:' ? null : 'health.svg',
     consecutiveFailures: 0,
     
     init() {

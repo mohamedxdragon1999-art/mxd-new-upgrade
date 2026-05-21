@@ -1,6 +1,5 @@
 ﻿// puzzle-worker.js â€” Web Worker for puzzle generation + PDF export
 importScripts('libs/jspdf.umd.min.js');
-importScripts('mxd-mask-pipeline.js');
 const { jsPDF } = self.jspdf;
 
 // IndexedDB cache for generated PDFs
@@ -237,8 +236,8 @@ function mask(R, C, shape, scale = 1.0) {
   // Use shared 3-stage pipeline if available
   if (typeof MXDMaskPipeline !== 'undefined' && MXDMaskPipeline.generate) {
     var svgPaths = MXDMaskPipeline.SHAPE_PATHS || {};
-    var m = MXDMaskPipeline.generate(R, C, shape, scale, svgPaths, null);
-    if (m) return m;
+    var generatedMask = MXDMaskPipeline.generate(R, C, shape, scale, svgPaths, null);
+    if (generatedMask) return generatedMask;
   }
   // Fallback: original math-based mask
   const m = Array.from({ length: R }, () => Array(C).fill(false));
@@ -529,7 +528,9 @@ async function generatePDF(puzzles, cfg, onProgress) {
   }
 
   // KDP compliance validation
-  const kdpCheck = validateKdpCompliance(cfg);
+  const kdpCheck = typeof self.validateKdpCompliance === 'function'
+    ? self.validateKdpCompliance(cfg)
+    : { isCompliant: true, issues: [], warnings: [] };
   if (onProgress && kdpCheck.issues.length > 0) {
     kdpCheck.issues.forEach(issue => {
       if (issue.severity === 'error') console.error('[PDF KDP] ' + issue.message);

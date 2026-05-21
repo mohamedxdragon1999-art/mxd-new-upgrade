@@ -17,7 +17,7 @@
     _heartbeatInterval: null,
     _heartbeatFailures: 0,
     _maxHeartbeatFailures: 3,
-    _heartbeatUrl: 'https://www.google.com/favicon.ico',
+    _heartbeatUrl: 'health.svg',
     _heartbeatIntervalMs: 30000,
     _listeners: {},
     _history: [],
