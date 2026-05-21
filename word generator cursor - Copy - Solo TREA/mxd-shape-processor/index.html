@@ -1,0 +1,2167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MXD Pro Shape Processor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.17/paper-full.min.js"></script>
+  <style>
+:root {
+  --bg: #f8f9fa;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --success: #059669;
+  --error: #dc2626;
+  --warn: #d97706;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { 
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+  background: var(--bg); 
+  color: var(--text); 
+  line-height: 1.5;
+  padding: 24px;
+}
+
+.container { max-width: 1200px; margin: 0 auto; }
+
+header { margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+h1 { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.subtitle { color: var(--text-secondary); font-size: 14px; }
+
+.mode-switcher {
+  display: inline-flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px;
+  margin-bottom: 24px;
+}
+.mode-btn {
+  padding: 8px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.mode-btn.active { background: var(--accent); color: white; }
+
+.main-layout { display: grid; grid-template-columns: 320px 1fr; gap: 24px; }
+@media (max-width: 900px) { .main-layout { grid-template-columns: 1fr; } }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.panel-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.form-group { margin-bottom: 14px; }
+label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+select, input[type="text"], textarea {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+select:focus, input:focus, textarea:focus { border-color: var(--accent); }
+textarea { min-height: 80px; resize: vertical; font-family: monospace; }
+
+input[type="range"] { width: 100%; margin: 4px 0; }
+
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--bg);
+}
+.drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: #eff6ff; }
+
+.toggle-row { display: flex; align-items: center; justify-content: space-between; margin: 12px 0; }
+.toggle-row label { margin: 0; }
+.toggle-switch { position: relative; width: 36px; height: 20px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; cursor: pointer; inset: 0;
+  background: var(--border); border-radius: 20px; transition: 0.2s;
+}
+.toggle-slider:before {
+  content: ""; position: absolute; height: 14px; width: 14px;
+  left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s;
+}
+.toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+.toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); }
+
+#processBtn {
+  width: 100%; padding: 10px; font-weight: 500; font-size: 13px;
+  background: var(--accent); border: none; border-radius: 6px;
+  color: white; cursor: pointer; margin-top: 16px;
+}
+#processBtn:hover { background: var(--accent-hover); }
+#processBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.loader-container { display: none; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; }
+.loader {
+  width: 16px; height: 16px; border: 2px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.progress-container { width: 100%; margin-top: 10px; display: none; }
+.progress-bar-bg { width: 100%; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.progress-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 2px; transition: width 0.2s; }
+.progress-text { font-size: 11px; color: var(--text-secondary); text-align: center; margin-top: 4px; }
+
+.status {
+  padding: 8px; border-radius: 4px; font-size: 12px; margin-top: 10px;
+  display: none; text-align: center;
+}
+.status.success { display: block; background: #ecfdf5; color: var(--success); }
+.status.error { display: block; background: #fef2f2; color: var(--error); }
+.status.info { display: block; background: #eff6ff; color: var(--accent); }
+.status.warn { display: block; background: #fffbeb; color: var(--warn); }
+
+.workspace { display: flex; flex-direction: column; gap: 20px; }
+
+.preview-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex; flex-direction: column; align-items: center;
+}
+.preview-container {
+  width: 100%; max-width: 400px; aspect-ratio: 1;
+  background: white; border: 1px solid var(--border); border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px; position: relative; overflow: hidden;
+}
+#previewCanvas, #previewSvg { max-width: 90%; max-height: 90%; }
+.preview-meta {
+  display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary);
+  background: var(--bg); padding: 8px 16px; border-radius: 20px;
+}
+
+.output-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.output-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.output-header span { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+pre {
+  background: var(--bg); padding: 12px; border-radius: 6px;
+  font-family: 'Fira Code', monospace; font-size: 12px; color: var(--text);
+  overflow-x: auto; max-height: 200px; white-space: pre-wrap; word-break: break-all;
+  border: 1px solid var(--border);
+}
+.copy-btn, .download-btn {
+  padding: 6px 12px; background: var(--accent); border: none; border-radius: 4px;
+  color: white; font-size: 12px; font-weight: 500; cursor: pointer;
+}
+.copy-btn:hover, .download-btn:hover { background: var(--accent-hover); }
+.download-btn { background: var(--success); }
+.download-btn:hover { background: #047857; }
+.btn-row { display: flex; gap: 6px; }
+
+.history-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.history-list { max-height: 150px; overflow-y: auto; }
+.history-item {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 6px 8px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; cursor: pointer; font-size: 12px; margin-bottom: 4px;
+}
+.history-item:hover { border-color: var(--accent); }
+.h-name { font-weight: 500; }
+.h-meta { color: var(--text-secondary); font-size: 11px; }
+.h-delete { background: none; border: none; color: var(--error); cursor: pointer; font-size: 12px; padding: 2px 4px; }
+.history-empty { color: var(--text-secondary); font-size: 12px; text-align: center; padding: 16px; }
+
+.direction-indicator {
+  position: absolute; bottom: 6px; right: 6px;
+  background: rgba(0,0,0,0.6); color: white; font-size: 10px;
+  padding: 3px 6px; border-radius: 3px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Shape Processor</h1>
+    <p class="subtitle">SVG extraction and optimization for word search puzzles</p>
+  </header>
+
+  <div class="mode-switcher">
+    <button class="mode-btn active" id="modeSVG">SVG</button>
+    <button class="mode-btn" id="modeVision">Image Trace</button>
+  </div>
+
+  <div class="main-layout">
+    <div class="panel">
+      <div id="svgControls">
+        <div class="panel-title">Settings</div>
+
+        <div class="form-group">
+          <label>Output Type</label>
+          <select id="renderingMode">
+            <option value="filled">Filled</option>
+            <option value="outer">Outline</option>
+            <option value="full">Full Detail</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Stroke Width</label>
+          <input type="range" id="strokeWeight" min="0" max="20" step="0.5" value="1">
+        </div>
+        <div class="form-group">
+          <label>Smoothing</label>
+          <input type="range" id="curveSmoothing" min="0" max="10" step="0.5" value="3">
+        </div>
+        <div class="form-group">
+          <label>Line Style</label>
+          <select id="lineStyle">
+            <option value="solid">Solid</option>
+            <option value="dashed">Dashed</option>
+          </select>
+        </div>
+        <div class="toggle-row">
+          <label>Normalize Origin</label>
+          <div class="toggle-switch">
+            <input type="checkbox" id="normalizeOrigin" checked>
+            <span class="toggle-slider"></span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Simplification</label>
+          <input type="range" id="simplification" min="0" max="10" step="1" value="0">
+        </div>
+        <div class="form-group">
+          <label>Precision</label>
+          <select id="precision">
+            <option value="0">Integer</option>
+            <option value="1" selected>1 decimal</option>
+            <option value="2">2 decimals</option>
+            <option value="3">3 decimals</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Shape Name</label>
+          <input type="text" id="shapeName" placeholder="e.g. fox">
+        </div>
+      </div>
+
+      <div id="visionControls" style="display:none;">
+        <div class="panel-title">Trace Settings</div>
+        
+        <div class="form-group">
+          <label>Threshold</label>
+          <input type="range" id="traceThreshold" min="0" max="255" value="128">
+        </div>
+        <div class="form-group">
+          <label>Noise Reduction</label>
+          <input type="range" id="traceNoise" min="0" max="10" step="0.5" value="2">
+        </div>
+        <div class="form-group">
+          <label>Min Area (px)</label>
+          <input type="range" id="traceSpeckle" min="0" max="500" step="10" value="20">
+        </div>
+        <div class="toggle-row">
+          <label>Invert</label>
+          <div class="toggle-switch">
+            <input type="checkbox" id="traceInvert">
+            <span class="toggle-slider"></span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Output Type</label>
+          <select id="visionRenderingMode">
+            <option value="filled">Filled</option>
+            <option value="outer">Outline</option>
+            <option value="full">Full Detail</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Quality</label>
+          <select id="traceAccuracy">
+            <option value="draft">Fast</option>
+            <option value="medium">Balanced</option>
+            <option value="high" selected>High</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Edge Smoothing</label>
+          <input type="range" id="traceSmooth" min="1" max="10" step="0.5" value="3">
+        </div>
+      </div>
+
+      <hr style="border:0; border-top:1px solid var(--border); margin:16px 0;">
+
+      <div class="panel-title">Input</div>
+      <div class="drop-zone" id="dropZone">
+        Drop file or click to browse
+      </div>
+      <input type="file" id="fileInput" accept=".svg,.png,.jpg,.jpeg" style="display:none;">
+      
+      <div class="form-group" style="margin-top:12px;">
+        <textarea id="svgInput" placeholder="Or paste SVG code..."></textarea>
+      </div>
+
+      <button id="processBtn">Process</button>
+      
+      <div id="loader" class="loader-container">
+        <div class="loader"></div>
+        <span style="font-size:12px; color:var(--text-secondary);">Processing...</span>
+      </div>
+
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">0%</div>
+      </div>
+
+      <div id="statusMsg" class="status"></div>
+    </div>
+
+    <div class="workspace">
+      <div class="preview-card">
+        <div class="panel-title">Preview</div>
+        <div class="preview-container" id="previewContainer">
+          <canvas id="previewCanvas" style="display:none;"></canvas>
+          <svg id="previewSvg" style="display:none;"></svg>
+          <div class="direction-indicator" id="directionIndicator" style="display:none;"></div>
+        </div>
+        <div class="preview-meta" id="previewMeta">
+          <span>No shape loaded</span>
+        </div>
+      </div>
+
+      <div class="history-panel">
+        <div class="panel-title">Recent</div>
+        <div id="historyList">
+          <div class="history-empty">No shapes processed yet</div>
+        </div>
+      </div>
+
+      <div class="output-card">
+        <div class="output-header">
+          <span>JavaScript Object</span>
+          <div class="btn-row">
+            <button class="copy-btn" id="copyJsBtn">Copy</button>
+          </div>
+        </div>
+        <pre id="outputJs">/* Output will appear here */</pre>
+      </div>
+
+      <div class="output-card">
+        <div class="output-header">
+          <span>SVG Code</span>
+          <div class="btn-row">
+            <button class="copy-btn" id="copySvgBtn">Copy</button>
+            <button class="download-btn" id="downloadSvgBtn">Download</button>
+          </div>
+        </div>
+        <pre id="outputSvg">/* Output will appear here */</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/**
+ * Shape Processor - Core Engine
+ */
+
+const CATEGORIES = {
+  'Animals': ['fox', 'dog', 'cat', 'lion', 'elephant', 'whale', 'shark', 'dolphin', 'eagle', 'owl', 'panda', 'rabbit', 'turtle', 'snake', 'deer', 'monkey', 'kangaroo', 'octopus', 'giraffe', 'zebra'],
+  'Nature': ['mountain', 'cloud', 'sun', 'leaf', 'flower', 'tree', 'wave', 'volcano', 'island', 'forest'],
+  'Buildings': ['house', 'castle', 'tower', 'church', 'skyscraper', 'temple', 'igloo'],
+  'Vehicles': ['car', 'truck', 'plane', 'ship', 'boat', 'bicycle', 'train', 'helicopter'],
+  'Food': ['apple', 'banana', 'pizza', 'burger', 'donut', 'cookie', 'strawberry', 'egg']
+};
+
+const SEARCH_PROVIDERS = {
+  svgrepo: 'https://www.svgrepo.com/vectors/'
+};
+
+// --- MATHEMATICAL UTILITIES (T1-A/B) ---
+
+function perpendicularDistanceSquared(point, lineStart, lineEnd) {
+  const dx = lineEnd.x - lineStart.x;
+  const dy = lineEnd.y - lineStart.y;
+  const magSq = dx * dx + dy * dy;
+  if (magSq === 0) return (point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2;
+  let t = ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / magSq;
+  t = Math.max(0, Math.min(1, t));
+  const projX = lineStart.x + t * dx;
+  const projY = lineStart.y + t * dy;
+  return (point.x - projX) ** 2 + (point.y - projY) ** 2;
+}
+
+function radialDistancePreFilter(points, tolerance) {
+  if (points.length <= 2) return points.slice();
+  const tolSq = tolerance * tolerance;
+  const result = [points[0]];
+  let prev = points[0];
+  for (let i = 1; i < points.length - 1; i++) {
+    const distSq = (points[i].x - prev.x) ** 2 + (points[i].y - prev.y) ** 2;
+    if (distSq > tolSq) {
+      result.push(points[i]);
+      prev = points[i];
+    }
+  }
+  result.push(points[points.length - 1]);
+  return result;
+}
+
+function ramerDouglasPeuckerIterative(points, epsilon) {
+  const n = points.length;
+  if (n <= 2) return points.slice();
+  
+  const keep = new Uint8Array(n);
+  keep[0] = 1;
+  keep[n - 1] = 1;
+  
+  const stack = [[0, n - 1]];
+  const epsSq = epsilon * epsilon;
+  
+  while (stack.length > 0) {
+    const [start, end] = stack.pop();
+    if (end - start <= 1) continue;
+    
+    let maxDistSq = 0;
+    let maxIndex = start;
+    const lineStart = points[start];
+    const lineEnd = points[end];
+    
+    for (let i = start + 1; i < end; i++) {
+      const distSq = perpendicularDistanceSquared(points[i], lineStart, lineEnd);
+      if (distSq > maxDistSq) {
+        maxDistSq = distSq;
+        maxIndex = i;
+      }
+    }
+    
+    if (maxDistSq > epsSq) {
+      keep[maxIndex] = 1;
+      stack.push([start, maxIndex]);
+      stack.push([maxIndex, end]);
+    }
+  }
+  
+  const result = [];
+  for (let i = 0; i < n; i++) {
+    if (keep[i]) result.push(points[i]);
+  }
+  return result;
+}
+
+function simplifyClosedPolygon(points, epsilon) {
+  const n = points.length;
+  if (n <= 4) return points.slice();
+  
+  let maxDistSq = 0;
+  let idxA = 0, idxB = 0;
+  
+  const step = Math.max(1, Math.floor(n / 200));
+  for (let i = 0; i < n; i += step) {
+    for (let j = i + step; j < n; j += step) {
+      const dx = points[i].x - points[j].x;
+      const dy = points[i].y - points[j].y;
+      const dSq = dx * dx + dy * dy;
+      if (dSq > maxDistSq) {
+        maxDistSq = dSq;
+        idxA = i;
+        idxB = j;
+      }
+    }
+  }
+  
+  const chain1 = [];
+  const chain2 = [];
+  let i = idxA;
+  while (true) {
+    chain1.push(points[i]);
+    if (i === idxB) break;
+    i = (i + 1) % n;
+  }
+  i = idxB;
+  while (true) {
+    chain2.push(points[i]);
+    if (i === idxA) break;
+    i = (i + 1) % n;
+  }
+  
+  const s1 = ramerDouglasPeuckerIterative(chain1, epsilon);
+  const s2 = ramerDouglasPeuckerIterative(chain2, epsilon);
+  
+  return s1.concat(s2.slice(1));
+}
+
+function simplifyContour(points, epsilon, isClosed) {
+  const preFiltered = radialDistancePreFilter(points, epsilon * 0.5);
+  if (preFiltered.length <= 3) return preFiltered;
+  
+  if (isClosed && preFiltered.length > 4) {
+    return simplifyClosedPolygon(preFiltered, epsilon);
+  }
+  
+  return ramerDouglasPeuckerIterative(preFiltered, epsilon);
+}
+
+function fitBezierToContour(points, tolerance) {
+  if (points.length < 3) return points;
+  
+  const segments = [];
+  const n = points.length;
+  const isClosed = pointDist(points[0], points[n-1]) < tolerance * 2;
+  const startTime = Date.now();
+  const BEZIER_TIMEOUT_MS = 3000;
+  
+  let leftTangent = { x: points[1].x - points[0].x, y: points[1].y - points[0].y };
+  normalizeVec(leftTangent);
+  let rightTangent;
+  if (isClosed) {
+    rightTangent = { x: points[0].x - points[n-2].x, y: points[0].y - points[n-2].y };
+  } else {
+    rightTangent = { x: points[n-1].x - points[n-2].x, y: points[n-1].y - points[n-2].y };
+  }
+  normalizeVec(rightTangent);
+  
+  fitCubic(points, segments, tolerance, 0, n - 1, leftTangent, rightTangent, 0, startTime, BEZIER_TIMEOUT_MS);
+  
+  return segments;
+}
+
+function fitCubic(points, segments, error, first, last, tan1, tan2, depth, startTime, timeoutMs) {
+  if (depth === undefined) depth = 0;
+  if (startTime === undefined) { startTime = Date.now(); timeoutMs = 3000; }
+  const MAX_DEPTH = 100;
+  
+  if (Date.now() - startTime > timeoutMs) {
+    for (let i = first; i < last; i++) {
+      const pt1 = points[i];
+      const pt2 = points[i + 1];
+      const dist = pointDist(pt1, pt2) / 3;
+      segments.push({
+        x: pt1.x, y: pt1.y,
+        x1: pt1.x + tan1.x * dist, y1: pt1.y + tan1.y * dist,
+        x2: pt2.x + tan2.x * dist, y2: pt2.y + tan2.y * dist,
+        x3: pt2.x, y3: pt2.y
+      });
+    }
+    return;
+  }
+  
+  if (last - first === 1) {
+    const pt1 = points[first];
+    const pt2 = points[last];
+    const dist = pointDist(pt1, pt2) / 3;
+    segments.push({
+      x: pt1.x, y: pt1.y,
+      x1: pt1.x + tan1.x * dist, y1: pt1.y + tan1.y * dist,
+      x2: pt2.x + tan2.x * dist, y2: pt2.y + tan2.y * dist,
+      x3: pt2.x, y3: pt2.y
+    });
+    return;
+  }
+  
+  if (depth >= MAX_DEPTH || last - first < 2) {
+    for (let i = first; i < last; i++) {
+      const pt1 = points[i];
+      const pt2 = points[i + 1];
+      const dist = pointDist(pt1, pt2) / 3;
+      segments.push({
+        x: pt1.x, y: pt1.y,
+        x1: pt1.x + tan1.x * dist, y1: pt1.y + tan1.y * dist,
+        x2: pt2.x + tan2.x * dist, y2: pt2.y + tan2.y * dist,
+        x3: pt2.x, y3: pt2.y
+      });
+    }
+    return;
+  }
+  
+  const uPrime = chordLengthParameterize(points, first, last);
+  let maxError = Math.max(error, error * error);
+  let split;
+  let parametersInOrder = true;
+  
+  for (let i = 0; i <= 4; i++) {
+    const curve = generateBezier(points, first, last, uPrime, tan1, tan2);
+    const maxErr = findMaxError(points, first, last, curve, uPrime);
+    if (maxErr.error < error && parametersInOrder) {
+      segments.push(curve);
+      return;
+    }
+    split = maxErr.index;
+    if (maxErr.error >= maxError) break;
+    parametersInOrder = reparameterize(points, first, last, uPrime, curve);
+    maxError = maxErr.error;
+  }
+  
+  if (split === undefined || split <= first || split >= last) {
+    split = first + Math.floor((last - first) / 2);
+  }
+  
+  const tanCenter = {
+    x: (points[split - 1].x - points[split].x + points[split].x - points[split + 1].x) / 2,
+    y: (points[split - 1].y - points[split].y + points[split].y - points[split + 1].y) / 2
+  };
+  normalizeVec(tanCenter);
+  
+  fitCubic(points, segments, error, first, split, tan1, { x: -tanCenter.x, y: -tanCenter.y }, depth + 1, startTime, timeoutMs);
+  fitCubic(points, segments, error, split, last, tanCenter, tan2, depth + 1, startTime, timeoutMs);
+}
+
+function chordLengthParameterize(points, first, last) {
+  const u = new Float64Array(last - first + 1);
+  u[0] = 0;
+  for (let i = first + 1; i <= last; i++) {
+    const dx = points[i].x - points[i-1].x;
+    const dy = points[i].y - points[i-1].y;
+    u[i - first] = u[i - first - 1] + Math.sqrt(dx * dx + dy * dy);
+  }
+  const total = u[last - first];
+  if (total > 0) {
+    for (let i = 1; i < u.length; i++) u[i] /= total;
+  }
+  return u;
+}
+
+function generateBezier(points, first, last, uPrime, tan1, tan2) {
+  const nPts = last - first + 1;
+  let A0x = 0, A0y = 0, A1x = 0, A1y = 0;
+  let C00 = 0, C01 = 0, C11 = 0, X0 = 0, X1 = 0;
+  
+  const pt1 = points[first];
+  const pt2 = points[last];
+  
+  for (let i = 0; i < nPts; i++) {
+    const u = uPrime[i];
+    const t = 1 - u;
+    const b1 = 3 * u * t * t;
+    const b2 = 3 * u * u * t;
+    const b3 = u * u * u;
+    
+    const a0x = tan1.x * b1;
+    const a0y = tan1.y * b1;
+    const a1x = tan2.x * b2;
+    const a1y = tan2.y * b2;
+    
+    const pt = points[first + i];
+    const tmpX = pt.x - t*t*t*pt1.x - b1*pt1.x - b2*pt2.x - b3*pt2.x;
+    const tmpY = pt.y - t*t*t*pt1.y - b1*pt1.y - b2*pt2.y - b3*pt2.y;
+    
+    C00 += a0x * a0x;
+    C01 += a0x * a1x + a0y * a1y;
+    C11 += a1x * a1x + a1y * a1y;
+    X0 += a0x * tmpX + a0y * tmpY;
+    X1 += a1x * tmpX + a1y * tmpY;
+  }
+  
+  let alpha1, alpha2;
+  const detC0C1 = C00 * C11 - C01 * C01;
+  const absDet = Math.abs(detC0C1);
+  
+  if (absDet > 1e-12) {
+    alpha1 = (X0 * C11 - X1 * C01) / detC0C1;
+    alpha2 = (C00 * X1 - C01 * X0) / detC0C1;
+  } else {
+    const dist = pointDist(pt1, pt2) / 3;
+    alpha1 = alpha2 = dist;
+  }
+  
+  const segLen = pointDist(pt1, pt2);
+  const eps = 1e-6 * segLen;
+  if (alpha1 < eps || alpha2 < eps) {
+    alpha1 = alpha2 = segLen / 3;
+  }
+  
+  const cp1x = pt1.x + tan1.x * alpha1;
+  const cp1y = pt1.y + tan1.y * alpha1;
+  const cp2x = pt2.x + tan2.x * alpha2;
+  const cp2y = pt2.y + tan2.y * alpha2;
+  
+  return { x: pt1.x, y: pt1.y, x1: cp1x, y1: cp1y, x2: cp2x, y2: cp2y, x3: pt2.x, y3: pt2.y };
+}
+
+function findMaxError(points, first, last, curve, uPrime) {
+  let maxDist = 0;
+  let maxIndex = first + Math.floor((last - first) / 2);
+  
+  for (let i = first + 1; i < last; i++) {
+    const u = uPrime[i - first];
+    const pt = evalBezier(curve, u);
+    const dx = points[i].x - pt.x;
+    const dy = points[i].y - pt.y;
+    const dist = dx * dx + dy * dy;
+    if (dist > maxDist) {
+      maxDist = dist;
+      maxIndex = i;
+    }
+  }
+  
+  return { error: maxDist, index: maxIndex };
+}
+
+function evalBezier(curve, t) {
+  const u = 1 - t;
+  return {
+    x: u*u*u*curve.x + 3*u*u*t*curve.x1 + 3*u*t*t*curve.x2 + t*t*t*curve.x3,
+    y: u*u*u*curve.y + 3*u*u*t*curve.y1 + 3*u*t*t*curve.y2 + t*t*t*curve.y3
+  };
+}
+
+function reparameterize(points, first, last, uPrime, curve) {
+  let inOrder = true;
+  for (let i = first; i <= last; i++) {
+    const u = uPrime[i - first];
+    const newU = findRoot(curve, points[i], u);
+    if (newU < 0 || newU > 1 || (i > first && newU < uPrime[i - first - 1])) {
+      inOrder = false;
+    } else {
+      uPrime[i - first] = newU;
+    }
+  }
+  return inOrder;
+}
+
+function findRoot(curve, point, u) {
+  const pt = evalBezier(curve, u);
+  const d = {
+    x: 3*(1-u)*(1-u)*(curve.x1 - curve.x) + 6*(1-u)*u*(curve.x2 - curve.x1) + 3*u*u*(curve.x3 - curve.x2),
+    y: 3*(1-u)*(1-u)*(curve.y1 - curve.y) + 6*(1-u)*u*(curve.y2 - curve.y1) + 3*u*u*(curve.y3 - curve.y2)
+  };
+  const f = { x: pt.x - point.x, y: pt.y - point.y };
+  const denom = d.x * d.x + d.y * d.y;
+  if (denom < 1e-12) return u;
+  const df = f.x * d.x + f.y * d.y;
+  return u - df / denom;
+}
+
+function pointDist(a, b) {
+  const dx = a.x - b.x, dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function normalizeVec(v) {
+  const len = Math.sqrt(v.x * v.x + v.y * v.y);
+  if (len > 0) { v.x /= len; v.y /= len; }
+}
+
+function contourToPathD(contours, useBezier, bezierTolerance) {
+  let d = "";
+  const MAX_POINTS_PER_CONTOUR = 2000;
+  const BEZIER_POINT_LIMIT = 800;
+  
+  contours.forEach(contour => {
+    if (contour.length < 3) return;
+    
+    let reduced = contour;
+    if (contour.length > MAX_POINTS_PER_CONTOUR) {
+      reduced = downsampleContour(contour, MAX_POINTS_PER_CONTOUR);
+    }
+    
+    if (useBezier && reduced.length > 10) {
+      const preSimplified = simplifyContour(reduced, bezierTolerance, true);
+      const capped = preSimplified.length > BEZIER_POINT_LIMIT ? downsampleContour(preSimplified, BEZIER_POINT_LIMIT) : preSimplified;
+      const fitted = fitBezierToContour(capped, bezierTolerance);
+      if (fitted.length > 0) {
+        d += `M ${fitted[0].x} ${fitted[0].y} `;
+        for (let i = 0; i < fitted.length; i++) {
+          d += `C ${fitted[i].x1} ${fitted[i].y1} ${fitted[i].x2} ${fitted[i].y2} ${fitted[i].x3} ${fitted[i].y3} `;
+        }
+        d += 'Z ';
+        return;
+      }
+    }
+    
+    const simplified = simplifyContour(reduced, bezierTolerance, true);
+    d += `M ${simplified[0].x} ${simplified[0].y} `;
+    for (let i = 1; i < simplified.length; i++) {
+      d += `L ${simplified[i].x} ${simplified[i].y} `;
+    }
+    d += 'Z ';
+  });
+  
+  return d;
+}
+
+function signedContourArea(contour) {
+  let area = 0;
+  for (let i = 0; i < contour.length; i++) {
+    const j = (i + 1) % contour.length;
+    area += contour[i].x * contour[j].y;
+    area -= contour[j].x * contour[i].y;
+  }
+  return area / 2;
+}
+
+function calculateContourArea(contour) {
+  return Math.abs(signedContourArea(contour));
+}
+
+function reverseContour(contour) {
+  return contour.slice().reverse();
+}
+
+function downsampleContour(contour, maxPoints) {
+  const n = contour.length;
+  if (n <= maxPoints) return contour;
+  
+  const step = n / maxPoints;
+  const result = [];
+  for (let i = 0; i < maxPoints; i++) {
+    result.push(contour[Math.floor(i * step)]);
+  }
+  result.push(contour[n - 1]);
+  return result;
+}
+
+function pointInPolygon(px, py, polygon) {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].x, yi = polygon[i].y;
+    const xj = polygon[j].x, yj = polygon[j].y;
+    const intersect = ((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function buildContourHierarchy(contours) {
+  const n = contours.length;
+  const parent = new Int32Array(n).fill(-1);
+  const depth = new Int32Array(n);
+  const startTime = Date.now();
+  const HIERARCHY_TIMEOUT_MS = 5000;
+  
+  if (n > 200) {
+    return buildContourHierarchyFast(contours, n, parent, depth, startTime, HIERARCHY_TIMEOUT_MS);
+  }
+  
+  for (let i = 0; i < n; i++) {
+    if (Date.now() - startTime > HIERARCHY_TIMEOUT_MS) {
+      console.warn("Hierarchy timeout, using partial results");
+      break;
+    }
+    if (contours[i].length < 3) continue;
+    const len = contours[i].length;
+    const testIndices = [0, Math.floor(len / 4), Math.floor(len / 2), Math.floor(3 * len / 4)];
+    let votes = {};
+    
+    for (const ti of testIndices) {
+      const ci = contours[i][ti % len];
+      for (let j = 0; j < n; j++) {
+        if (i === j || contours[j].length < 3) continue;
+        if (pointInPolygon(ci.x, ci.y, contours[j])) {
+          const areaJ = calculateContourArea(contours[j]);
+          if (!(j in votes) || areaJ < votes[j].area) {
+            votes[j] = { count: (votes[j]?.count || 0) + 1, area: areaJ };
+          }
+        }
+      }
+    }
+    
+    let bestParent = -1;
+    let bestArea = Infinity;
+    for (const jStr in votes) {
+      const j = parseInt(jStr);
+      if (votes[j].count >= 2 && votes[j].area < bestArea) {
+        bestParent = j;
+        bestArea = votes[j].area;
+      }
+    }
+    if (bestParent === -1) {
+      for (const jStr in votes) {
+        const j = parseInt(jStr);
+        if (votes[j].area < bestArea) {
+          bestParent = j;
+          bestArea = votes[j].area;
+        }
+      }
+    }
+    parent[i] = bestParent;
+  }
+  
+  for (let i = 0; i < n; i++) {
+    let d = 0, p = i;
+    while (parent[p] !== -1) { d++; p = parent[p]; }
+    depth[i] = d;
+  }
+  
+  return { parent, depth };
+}
+
+function buildContourHierarchyFast(contours, n, parent, depth, startTime, timeoutMs) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  
+  for (let i = 0; i < n; i++) {
+    if (contours[i].length < 3) continue;
+    for (let k = 0; k < contours[i].length; k += Math.max(1, Math.floor(contours[i].length / 20))) {
+      const p = contours[i][k];
+      if (p.x < minX) minX = p.x; if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x; if (p.y > maxY) maxY = p.y;
+    }
+  }
+  
+  const gridSize = Math.max(10, Math.floor(Math.sqrt(n)));
+  const cellW = (maxX - minX) / gridSize;
+  const cellH = (maxY - minY) / gridSize;
+  const grid = Array.from({ length: gridSize * gridSize }, () => []);
+  
+  const contourBounds = [];
+  for (let i = 0; i < n; i++) {
+    if (contours[i].length < 3) { contourBounds.push(null); continue; }
+    let cMinX = Infinity, cMinY = Infinity, cMaxX = -Infinity, cMaxY = -Infinity;
+    for (let k = 0; k < contours[i].length; k += Math.max(1, Math.floor(contours[i].length / 20))) {
+      const p = contours[i][k];
+      if (p.x < cMinX) cMinX = p.x; if (p.y < cMinY) cMinY = p.y;
+      if (p.x > cMaxX) cMaxX = p.x; if (p.y > cMaxY) cMaxY = p.y;
+    }
+    contourBounds.push({ minX: cMinX, minY: cMinY, maxX: cMaxX, maxY: cMaxY, area: calculateContourArea(contours[i]) });
+    
+    const gx1 = Math.max(0, Math.min(gridSize - 1, Math.floor((cMinX - minX) / cellW)));
+    const gy1 = Math.max(0, Math.min(gridSize - 1, Math.floor((cMinY - minY) / cellH)));
+    const gx2 = Math.max(0, Math.min(gridSize - 1, Math.floor((cMaxX - minX) / cellW)));
+    const gy2 = Math.max(0, Math.min(gridSize - 1, Math.floor((cMaxY - minY) / cellH)));
+    
+    for (let gx = gx1; gx <= gx2; gx++) {
+      for (let gy = gy1; gy <= gy2; gy++) {
+        grid[gy * gridSize + gx].push(i);
+      }
+    }
+  }
+  
+  for (let i = 0; i < n; i++) {
+    if (Date.now() - startTime > timeoutMs) {
+      console.warn("Fast hierarchy timeout, using partial results");
+      break;
+    }
+    if (!contourBounds[i]) continue;
+    const b = contourBounds[i];
+    const cx = (b.minX + b.maxX) / 2;
+    const cy = (b.minY + b.maxY) / 2;
+    
+    const gx = Math.max(0, Math.min(gridSize - 1, Math.floor((cx - minX) / cellW)));
+    const gy = Math.max(0, Math.min(gridSize - 1, Math.floor((cy - minY) / cellH)));
+    
+    let candidates = new Set();
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const ngx = gx + dx, ngy = gy + dy;
+        if (ngx >= 0 && ngx < gridSize && ngy >= 0 && ngy < gridSize) {
+          for (const j of grid[ngy * gridSize + ngx]) {
+            if (j !== i && contourBounds[j]) candidates.add(j);
+          }
+        }
+      }
+    }
+    
+    let bestParent = -1;
+    let bestArea = Infinity;
+    for (const j of candidates) {
+      const jb = contourBounds[j];
+      if (b.minX >= jb.minX && b.minY >= jb.minY && b.maxX <= jb.maxX && b.maxY <= jb.maxY) {
+        if (pointInPolygon(cx, cy, contours[j])) {
+          if (jb.area < bestArea) {
+            bestParent = j;
+            bestArea = jb.area;
+          }
+        }
+      }
+    }
+    parent[i] = bestParent;
+  }
+  
+  for (let i = 0; i < n; i++) {
+    let d = 0, p = i;
+    while (parent[p] !== -1) { d++; p = parent[p]; }
+    depth[i] = d;
+  }
+  
+  return { parent, depth };
+}
+
+function applyWindingDirection(contours) {
+  if (contours.length === 0) return contours;
+  if (contours.length === 1) {
+    const area = signedContourArea(contours[0]);
+    return area > 0 ? [contours[0]] : [reverseContour(contours[0])];
+  }
+  
+  const { parent, depth } = buildContourHierarchy(contours);
+  const result = [];
+  
+  for (let i = 0; i < contours.length; i++) {
+    const isOuter = depth[i] % 2 === 0;
+    const area = signedContourArea(contours[i]);
+    
+    if (isOuter) {
+      result.push(area > 0 ? contours[i] : reverseContour(contours[i]));
+    } else {
+      result.push(area < 0 ? contours[i] : reverseContour(contours[i]));
+    }
+  }
+  
+  return result;
+}
+
+function parseSVGPath(d) {
+  const segments = [];
+  const regex = /([MLCSQTHVZmlcsqthvaz])|([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)/g;
+  let match;
+  const tokens = [];
+  
+  while ((match = regex.exec(d)) !== null) {
+    if (match[1]) tokens.push(match[1]);
+    else if (match[2]) tokens.push(parseFloat(match[2]));
+  }
+  
+  let cx = 0, cy = 0, sx = 0, sy = 0;
+  let i = 0;
+  
+  const argCount = { M: 2, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2, A: 7, Z: 0, m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 };
+  
+  let implicitCmd = null;
+  
+  if (tokens.length > 0 && typeof tokens[0] === 'number') {
+    implicitCmd = 'M';
+  }
+  
+  while (i < tokens.length) {
+    let cmd = tokens[i];
+    
+    if (typeof cmd !== 'string') {
+      if (implicitCmd) {
+        cmd = implicitCmd;
+      } else {
+        i++;
+        continue;
+      }
+    } else {
+      implicitCmd = null;
+    }
+    
+    const n = argCount[cmd] || 0;
+    const args = [];
+    for (let j = 0; j < n && i + 1 + j < tokens.length; j++) {
+      args.push(tokens[i + 1 + j]);
+    }
+    i += 1 + n;
+    
+    const isRel = cmd === cmd.toLowerCase() && cmd !== 'Z' && cmd !== 'z';
+    const upper = cmd.toUpperCase();
+    
+    if (upper === 'Z') {
+      segments.push({ type: 'Z' });
+      cx = sx; cy = sy;
+      implicitCmd = null;
+      continue;
+    }
+    
+    if (upper === 'H') {
+      const x = isRel ? cx + args[0] : args[0];
+      segments.push({ type: 'L', x, y: cy });
+      cx = x;
+      continue;
+    }
+    
+    if (upper === 'V') {
+      const y = isRel ? cy + args[0] : args[0];
+      segments.push({ type: 'L', x: cx, y });
+      cy = y;
+      continue;
+    }
+    
+    if (upper === 'M') {
+      const x = isRel ? cx + args[0] : args[0];
+      const y = isRel ? cy + args[1] : args[1];
+      segments.push({ type: 'M', x, y });
+      cx = x; cy = y; sx = x; sy = y;
+      implicitCmd = isRel ? 'l' : 'L';
+      continue;
+    }
+    
+    if (upper === 'L') {
+      const x = isRel ? cx + args[0] : args[0];
+      const y = isRel ? cy + args[1] : args[1];
+      segments.push({ type: 'L', x, y });
+      cx = x; cy = y;
+      continue;
+    }
+    
+    if (upper === 'C') {
+      const x1 = isRel ? cx + args[0] : args[0];
+      const y1 = isRel ? cy + args[1] : args[1];
+      const x2 = isRel ? cx + args[2] : args[2];
+      const y2 = isRel ? cy + args[3] : args[3];
+      const x = isRel ? cx + args[4] : args[4];
+      const y = isRel ? cy + args[5] : args[5];
+      segments.push({ type: 'C', x1, y1, x2, y2, x, y });
+      cx = x; cy = y;
+      continue;
+    }
+    
+    if (upper === 'S') {
+      let x1, y1;
+      const prev = segments.length > 0 ? segments[segments.length - 1] : null;
+      if (prev && (prev.type === 'C' || prev.type === 'S')) {
+        x1 = cx + (cx - prev.x2);
+        y1 = cy + (cy - prev.y2);
+      } else {
+        x1 = cx; y1 = cy;
+      }
+      const x2 = isRel ? cx + args[0] : args[0];
+      const y2 = isRel ? cy + args[1] : args[1];
+      const x = isRel ? cx + args[2] : args[2];
+      const y = isRel ? cy + args[3] : args[3];
+      segments.push({ type: 'C', x1, y1, x2, y2, x, y });
+      cx = x; cy = y;
+      continue;
+    }
+    
+    if (upper === 'Q') {
+      const x1 = isRel ? cx + args[0] : args[0];
+      const y1 = isRel ? cy + args[1] : args[1];
+      const x = isRel ? cx + args[2] : args[2];
+      const y = isRel ? cy + args[3] : args[3];
+      const x2 = x1 + (x - x1) * 2 / 3;
+      const y2 = y1 + (y - y1) * 2 / 3;
+      const cx1 = cx + (x1 - cx) * 2 / 3;
+      const cy1 = cy + (y1 - cy) * 2 / 3;
+      segments.push({ type: 'C', x1: cx1, y1: cy1, x2, y2, x, y });
+      cx = x; cy = y;
+      continue;
+    }
+    
+    if (upper === 'T') {
+      let x1, y1;
+      const prev = segments.length > 0 ? segments[segments.length - 1] : null;
+      if (prev && (prev.type === 'Q' || prev.type === 'T')) {
+        x1 = cx + (cx - prev.x1);
+        y1 = cy + (cy - prev.y1);
+      } else {
+        x1 = cx; y1 = cy;
+      }
+      const x = isRel ? cx + args[0] : args[0];
+      const y = isRel ? cy + args[1] : args[1];
+      const x2 = x1 + (x - x1) * 2 / 3;
+      const y2 = y1 + (y - y1) * 2 / 3;
+      const cx1 = cx + (x1 - cx) * 2 / 3;
+      const cy1 = cy + (y1 - cy) * 2 / 3;
+      segments.push({ type: 'C', x1: cx1, y1: cy1, x2, y2, x, y });
+      cx = x; cy = y;
+      continue;
+    }
+    
+    if (upper === 'A') {
+      const rx = Math.abs(args[0]);
+      const ry = Math.abs(args[1]);
+      const rot = args[2];
+      const largeArc = args[3];
+      const sweep = args[4];
+      const x = isRel ? cx + args[5] : args[5];
+      const y = isRel ? cy + args[6] : args[6];
+      
+      const arcSegs = arcToCubicBeziers(cx, cy, rx, ry, rot, largeArc, sweep, x, y);
+      arcSegs.forEach(s => segments.push(s));
+      cx = x; cy = y;
+      continue;
+    }
+  }
+  
+  return segments;
+}
+
+function arcToCubicBeziers(x1, y1, rx, ry, angle, largeArc, sweep, x2, y2) {
+  const segments = [];
+  const rad = angle * Math.PI / 180;
+  const cosA = Math.cos(rad);
+  const sinA = Math.sin(rad);
+  
+  const dx = (x1 - x2) / 2;
+  const dy = (y1 - y2) / 2;
+  const x1p = cosA * dx + sinA * dy;
+  const y1p = -sinA * dx + cosA * dy;
+  
+  let rx2 = rx * rx, ry2 = ry * ry;
+  let x1p2 = x1p * x1p, y1p2 = y1p * y1p;
+  
+  let lambda = x1p2 / rx2 + y1p2 / ry2;
+  if (lambda > 1) {
+    rx *= Math.sqrt(lambda);
+    ry *= Math.sqrt(lambda);
+    rx2 = rx * rx; ry2 = ry * ry;
+  }
+  
+  let sign = (largeArc === sweep) ? -1 : 1;
+  let sq = Math.max(0, (rx2 * ry2 - rx2 * y1p2 - ry2 * x1p2) / (rx2 * y1p2 + ry2 * x1p2));
+  let coef = sign * Math.sqrt(sq);
+  const cxp = coef * (rx * y1p / ry);
+  const cyp = coef * (-ry * x1p / rx);
+  
+  const cx0 = cosA * cxp - sinA * cyp + (x1 + x2) / 2;
+  const cy0 = sinA * cxp + cosA * cyp + (y1 + y2) / 2;
+  
+  const theta1 = Math.atan2((y1p - cyp) / ry, (x1p - cxp) / rx);
+  let dtheta = Math.atan2((-y1p - cyp) / ry, (-x1p - cxp) / rx) - theta1;
+  
+  if (sweep === 0 && dtheta > 0) dtheta -= 2 * Math.PI;
+  else if (sweep === 1 && dtheta < 0) dtheta += 2 * Math.PI;
+  
+  const numSegs = Math.ceil(Math.abs(dtheta) / (Math.PI / 2));
+  dtheta /= numSegs;
+  
+  let curX = x1, curY = y1;
+  let curTheta = theta1;
+  
+  for (let i = 0; i < numSegs; i++) {
+    const nextTheta = curTheta + dtheta;
+    const t = (4 / 3) * Math.tan(dtheta / 4);
+    
+    const nx = cx0 + rx * Math.cos(nextTheta);
+    const ny = cy0 + ry * Math.sin(nextTheta);
+    
+    const cp1x = curX - t * rx * Math.sin(curTheta);
+    const cp1y = curY + t * ry * Math.cos(curTheta);
+    const cp2x = nx + t * rx * Math.sin(nextTheta);
+    const cp2y = ny - t * ry * Math.cos(nextTheta);
+    
+    segments.push({ type: 'C', x1: cp1x, y1: cp1y, x2: cp2x, y2: cp2y, x: nx, y: ny });
+    curX = nx; curY = ny;
+    curTheta = nextTheta;
+  }
+  
+  return segments;
+}
+
+function normalizePathToOrigin(d) {
+  const segments = parseSVGPath(d);
+  if (segments.length === 0) return { d, offsetX: 0, offsetY: 0 };
+  
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  
+  const updateBounds = (x, y) => {
+    if (x < minX) minX = x; if (y < minY) minY = y;
+    if (x > maxX) maxX = x; if (y > maxY) maxY = y;
+  };
+  
+  segments.forEach(seg => {
+    if (seg.x !== undefined) updateBounds(seg.x, seg.y);
+    if (seg.x1 !== undefined) updateBounds(seg.x1, seg.y1);
+    if (seg.x2 !== undefined) updateBounds(seg.x2, seg.y2);
+  });
+  
+  if (minX === Infinity) return { d, offsetX: 0, offsetY: 0 };
+  
+  const offsetX = minX < 0 ? -minX : 0;
+  const offsetY = minY < 0 ? -minY : 0;
+  
+  if (offsetX === 0 && offsetY === 0) return { d, offsetX: 0, offsetY: 0 };
+  
+  segments.forEach(seg => {
+    if (seg.x !== undefined) { seg.x += offsetX; }
+    if (seg.y !== undefined) { seg.y += offsetY; }
+    if (seg.x1 !== undefined) { seg.x1 += offsetX; seg.y1 += offsetY; }
+    if (seg.x2 !== undefined) { seg.x2 += offsetX; seg.y2 += offsetY; }
+  });
+  
+  const normalized = segmentsToPathD(segments);
+  return { d: normalized, offsetX, offsetY };
+}
+
+function segmentsToPathD(segments) {
+  let d = '';
+  let lastType = '';
+  let hasOpenSubpath = false;
+  
+  segments.forEach(seg => {
+    if (seg.type === 'M') {
+      if (hasOpenSubpath) { d += 'Z '; }
+      d += `M ${seg.x} ${seg.y} `;
+      hasOpenSubpath = true;
+    } else if (seg.type === 'L') {
+      if (lastType === 'L') {
+        d += `${seg.x} ${seg.y} `;
+      } else {
+        d += `L ${seg.x} ${seg.y} `;
+      }
+    } else if (seg.type === 'C') {
+      if (lastType === 'C') {
+        d += `${seg.x1} ${seg.y1} ${seg.x2} ${seg.y2} ${seg.x} ${seg.y} `;
+      } else {
+        d += `C ${seg.x1} ${seg.y1} ${seg.x2} ${seg.y2} ${seg.x} ${seg.y} `;
+      }
+    } else if (seg.type === 'Z') {
+      d += 'Z ';
+      hasOpenSubpath = false;
+    }
+    lastType = seg.type;
+  });
+  
+  if (hasOpenSubpath) { d += 'Z'; }
+  
+  return d.trim();
+}
+
+function detectFillRule(d) {
+  const segments = parseSVGPath(d);
+  const subPaths = [];
+  let currentPath = [];
+  
+  segments.forEach(seg => {
+    if (seg.type === 'M') {
+      if (currentPath.length > 0) subPaths.push(currentPath);
+      currentPath = [];
+    }
+    if (seg.type === 'L' || seg.type === 'C') {
+      currentPath.push({ x: seg.x, y: seg.y });
+    }
+  });
+  if (currentPath.length > 0) subPaths.push(currentPath);
+  
+  if (subPaths.length <= 1) return 'nonzero';
+  
+  let hasOppositeWinding = false;
+  let firstSign = 0;
+  
+  subPaths.forEach(path => {
+    const area = signedContourArea(path);
+    const sign = area > 0 ? 1 : -1;
+    if (firstSign === 0) firstSign = sign;
+    else if (sign !== firstSign) hasOppositeWinding = true;
+  });
+  
+  return hasOppositeWinding ? 'nonzero' : 'evenodd';
+}
+
+// --- CORE ENGINE CLASS ---
+
+class MXDProcessor {
+  constructor() {
+    this.mode = 'SVG'; 
+    this.currentShape = null;
+    this.currentFile = null; 
+    this.canvas = document.getElementById('previewCanvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.svgPreview = document.getElementById('previewSvg');
+    this.history = [];
+    this.processDebounce = null;
+    
+    try {
+      this.paperCanvas = document.createElement('canvas');
+      this.paperCanvas.width = 1000;
+      this.paperCanvas.height = 1000;
+      paper.setup(this.paperCanvas);
+    } catch (err) {
+      console.error("Paper.js setup failed:", err);
+    }
+
+    this.setupEventListeners();
+    this.updateModeUI('SVG');
+    this.renderHistory();
+  }
+
+  setupEventListeners() {
+    document.getElementById('modeSVG').addEventListener('click', (e) => this.setMode('SVG', e.currentTarget));
+    document.getElementById('modeVision').addEventListener('click', (e) => this.setMode('VISION', e.currentTarget));
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    dropZone.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'copy';
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.remove('dragover');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        this.handleFile(files[0]);
+      }
+    });
+    fileInput.addEventListener('change', (e) => this.handleFile(e.target.files[0]));
+
+    document.getElementById('svgInput').addEventListener('input', () => {
+      clearTimeout(this.processDebounce);
+      this.processDebounce = setTimeout(() => this.process(), 500);
+    });
+    document.getElementById('processBtn').addEventListener('click', () => this.process());
+    document.getElementById('copyJsBtn').addEventListener('click', () => this.copyToClipboard('js'));
+    document.getElementById('copySvgBtn').addEventListener('click', () => this.copyToClipboard('svg'));
+    document.getElementById('downloadSvgBtn').addEventListener('click', () => this.downloadSVG());
+  }
+
+  setMode(mode, btn) {
+    this.mode = mode;
+    if (mode !== 'VISION') this.currentFile = null;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    this.updateModeUI(mode);
+    this.showStatus(`Switched to ${mode === 'SVG' ? 'SVG' : 'Image Trace'}`, 'info');
+  }
+
+  updateModeUI(mode) {
+    document.getElementById('svgControls').style.display = mode === 'SVG' ? 'block' : 'none';
+    document.getElementById('visionControls').style.display = mode === 'VISION' ? 'block' : 'none';
+  }
+
+  async handleFile(file) {
+    if (!file) return;
+    this.toggleLoading(true);
+    this.showStatus(`Loading ${file.name}...`, 'info');
+    try {
+      if (file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')) {
+        const text = await file.text();
+        document.getElementById('svgInput').value = text;
+        this.setMode('SVG', document.getElementById('modeSVG'));
+        await this.process();
+      } else {
+        this.currentFile = file;
+        document.getElementById('svgInput').value = '';
+        this.setMode('VISION', document.getElementById('modeVision'));
+        await this.process();
+      }
+    } catch (err) {
+      this.showStatus('Error loading file: ' + err.message, 'error');
+    } finally {
+      this.toggleLoading(false);
+    }
+  }
+
+  async process() {
+    let input = document.getElementById('svgInput').value.trim();
+    const name = document.getElementById('shapeName').value.trim() || 'shape';
+    
+    this.toggleLoading(true);
+    this.showStatus('Processing...', 'info');
+    this.hideProgress();
+
+    try {
+      if (this.mode === 'SVG') {
+        if (!input) throw new Error('No SVG content detected. Please paste code or drop an SVG.');
+        await this.processSVG(input, name);
+      } else {
+        let imageSource = this.currentFile || input;
+        if (!imageSource) throw new Error('No image detected. Please drop an image or use Vision mode.');
+        await this.processVision(imageSource, name);
+      }
+      this.showStatus('Done', 'success');
+    } catch (err) {
+      console.error(err);
+      const suggestion = this.getErrorSuggestion(err.message);
+      this.showStatus('Error: ' + err.message + (suggestion ? ' — ' + suggestion : ''), 'error');
+    } finally {
+      this.toggleLoading(false);
+    }
+  }
+
+  getErrorSuggestion(msg) {
+    const lower = msg.toLowerCase();
+    if (lower.includes('no object detected') || lower.includes('no valid')) return 'Try lowering the Threshold or toggling Invert';
+    if (lower.includes('speckle')) return 'Lower the Speckle Filter value';
+    if (lower.includes('empty')) return 'Try a different Rendering Mode or increase Simplification';
+    if (lower.includes('parse') || lower.includes('import')) return 'Check that the SVG is valid XML';
+    if (lower.includes('unite')) return 'Try Full Trace mode instead of Filled/Outer';
+    return '';
+  }
+
+  // --- T1-H: Recursive Group Path Extraction ---
+  extractPathsFromItem(item) {
+    const paths = [];
+    const compoundPaths = [];
+    
+    const recurse = (obj) => {
+      if (!obj) return;
+      if (obj.className === 'Path' && !obj.clipMask) {
+        paths.push(obj);
+      } else if (obj.className === 'CompoundPath' && !obj.clipMask) {
+        compoundPaths.push(obj);
+      } else if (obj.className === 'Group') {
+        if (obj.children) {
+          obj.children.forEach(child => recurse(child));
+        }
+      } else if (obj.children) {
+        obj.children.forEach(child => recurse(child));
+      }
+    };
+    
+    recurse(item);
+    return { paths, compoundPaths };
+  }
+
+  // --- ENGINE 1: SVG EXPERT ---
+
+  async processSVG(rawInput, name) {
+    paper.project.clear();
+    
+    const renderingMode = document.getElementById('renderingMode').value;
+    const precision = parseInt(document.getElementById('precision').value);
+    const simplification = parseFloat(document.getElementById('simplification').value);
+    const smoothing = parseFloat(document.getElementById('curveSmoothing').value);
+    const strokeWeight = parseFloat(document.getElementById('strokeWeight').value);
+    const lineStyle = document.getElementById('lineStyle').value;
+    const normalize = document.getElementById('normalizeOrigin').checked;
+
+    this.updateProgress(10, 'Parsing SVG...');
+    await this.yieldToUI();
+
+    const item = await new Promise((resolve, reject) => {
+      try {
+        paper.project.importSVG(rawInput, { expandShapes: true }, (importedItem) => {
+          if (!importedItem) reject(new Error('Failed to parse SVG with Paper.js'));
+          resolve(importedItem);
+        });
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    if (!item) throw new Error('No valid SVG content found');
+
+    const bounds = item.bounds;
+    const w = bounds.width || 512;
+    const h = bounds.height || 512;
+    if (w < 50 || h < 50) {
+      this.showStatus(`Warning: SVG is very small (${Math.round(w)}x${Math.round(h)}px). Output may lack detail.`, 'warn');
+    }
+    if (w > 5000 || h > 5000) {
+      this.showStatus(`Warning: SVG is very large (${Math.round(w)}x${Math.round(h)}px). Processing may be slow.`, 'warn');
+    }
+
+    this.updateProgress(25, 'Extracting paths...');
+    await this.yieldToUI();
+
+    const { paths, compoundPaths } = this.extractPathsFromItem(item);
+
+    paths.forEach(p => { if (!p.closed) p.closePath(); });
+    compoundPaths.forEach(cp => { if (!cp.closed) cp.closePath(); });
+
+    let processedItem;
+
+    if (renderingMode === 'full') {
+      processedItem = item;
+    } else if (renderingMode === 'outer') {
+      const allItems = [...paths, ...compoundPaths];
+      if (allItems.length === 0) throw new Error('No valid paths found in SVG');
+      
+      let largestPath = allItems[0];
+      let largestArea = 0;
+      for (let i = 0; i < allItems.length; i++) {
+        const area = Math.abs(allItems[i].area || 0);
+        if (area > largestArea) {
+          largestArea = area;
+          largestPath = allItems[i];
+        }
+      }
+      processedItem = largestPath.clone();
+    } else {
+      const allItems = [...paths, ...compoundPaths];
+      if (allItems.length === 0) throw new Error('No valid paths found in SVG');
+      
+      const MAX_UNITE_OPS = 50;
+      const UNITE_TIMEOUT_MS = 5000;
+      const startTime = Date.now();
+      
+      if (allItems.length <= MAX_UNITE_OPS) {
+        let unitedItem = allItems[0].clone();
+        
+        for (let i = 1; i < allItems.length; i++) {
+          if (Date.now() - startTime > UNITE_TIMEOUT_MS) {
+            console.warn("Unite timeout, falling back to CompoundPath");
+            unitedItem.remove();
+            const cp = new paper.CompoundPath();
+            allItems.forEach(p => {
+              const clone = p.clone();
+              cp.addChild(clone);
+            });
+            unitedItem = cp;
+            break;
+          }
+          try {
+            const result = unitedItem.unite(allItems[i]);
+            if (result) {
+              unitedItem.remove();
+              unitedItem = result;
+            }
+          } catch (e) {
+            console.warn("Unite failed, skipping path", e);
+          }
+          
+          if (i % 5 === 0) {
+            const pct = 25 + Math.round((i / allItems.length) * 40);
+            this.updateProgress(pct, `Merging paths... ${i}/${allItems.length}`);
+            await this.yieldToUI();
+          }
+        }
+        processedItem = unitedItem;
+      } else {
+        const cp = new paper.CompoundPath();
+        allItems.forEach(p => {
+          const clone = p.clone();
+          cp.addChild(clone);
+        });
+        processedItem = cp;
+      }
+    }
+
+    this.updateProgress(70, 'Refining curves...');
+    await this.yieldToUI();
+
+    if (smoothing > 0 && processedItem) processedItem.smooth({ type: 'continuous' });
+    if (simplification > 0 && processedItem) processedItem.simplify(simplification);
+
+    let d = "";
+    if (renderingMode === 'full') {
+      const { paths: allPaths, compoundPaths: allCPs } = this.extractPathsFromItem(item);
+      d = [...allPaths, ...allCPs].map(i => i.pathData).join(' ');
+    } else {
+      if (processedItem.className === 'CompoundPath') {
+        d = processedItem.children.map(c => c.pathData).join(' ');
+      } else {
+        d = processedItem.pathData || "";
+      }
+    }
+
+    if (!d) throw new Error('Resulting path is empty. Try different settings.');
+
+    this.updateProgress(85, 'Normalizing coordinates...');
+    await this.yieldToUI();
+
+    let offsetX = 0, offsetY = 0;
+    if (normalize) {
+      const norm = normalizePathToOrigin(d);
+      d = norm.d;
+      offsetX = norm.offsetX;
+      offsetY = norm.offsetY;
+    }
+
+    d = this.optimizePath(d, precision);
+
+    const fillRule = detectFillRule(d);
+
+    this.currentShape = { 
+      name, d, w, h, renderingMode, strokeWeight, 
+      curveSmoothing: smoothing, lineStyle, fillRule,
+      offsetX, offsetY
+    };
+    
+    this.updateProgress(100, 'Done!');
+    await this.yieldToUI();
+    
+    this.renderPreview(this.currentShape);
+    this.generateCode(this.currentShape);
+    this.addToHistory(this.currentShape);
+    
+    paper.project.clear();
+  }
+
+  // --- ENGINE 2: VISION MODE (T1-C/D, T2-J/K, T1-A/B, P3-Performance) ---
+
+  async processVision(source, name) {
+    let img;
+    if (source instanceof File || source instanceof Blob) {
+      img = await this.blobToImage(source);
+    } else if (typeof source === 'string' && source.startsWith('<')) {
+      const blob = new Blob([source], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      img = await this.blobToImage(url);
+      URL.revokeObjectURL(url);
+    } else {
+      img = await this.blobToImage(source);
+    }
+
+    const threshold = parseInt(document.getElementById('traceThreshold').value);
+    const noise = parseFloat(document.getElementById('traceNoise').value);
+    const smoothing = parseInt(document.getElementById('traceSmooth').value);
+    const accuracy = document.getElementById('traceAccuracy').value;
+    const renderingMode = document.getElementById('visionRenderingMode').value;
+    const invert = document.getElementById('traceInvert').checked;
+    const speckleMin = parseInt(document.getElementById('traceSpeckle').value);
+
+    const epsilonMap = { draft: 5, medium: 2, high: 0.5 };
+    const epsilon = epsilonMap[accuracy] || 2;
+    const useBezier = accuracy === 'high' || accuracy === 'medium';
+
+    let workCanvas = document.createElement('canvas');
+    let workCtx = workCanvas.getContext('2d');
+    
+    const MAX_DIMENSION = 1500;
+    let scale = 1;
+    if (img.width > MAX_DIMENSION || img.height > MAX_DIMENSION) {
+      scale = MAX_DIMENSION / Math.max(img.width, img.height);
+      workCanvas.width = Math.round(img.width * scale);
+      workCanvas.height = Math.round(img.height * scale);
+    } else {
+      workCanvas.width = img.width;
+      workCanvas.height = img.height;
+    }
+    
+    workCtx.filter = `blur(${noise}px)`;
+    workCtx.drawImage(img, 0, 0, workCanvas.width, workCanvas.height);
+    
+    const imageData = workCtx.getImageData(0, 0, workCanvas.width, workCanvas.height);
+    const data = imageData.data;
+    const width = workCanvas.width;
+    const height = workCanvas.height;
+    const binaryData = new Uint8Array(width * height);
+    
+    for (let i = 0; i < data.length; i += 4) {
+      const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
+      binaryData[i/4] = invert ? (brightness >= threshold ? 1 : 0) : (brightness < threshold ? 1 : 0);
+    }
+
+    this.updateProgress(10, 'Binarizing image...');
+    await this.yieldToUI();
+
+    const allContours = [];
+    const traced = new Uint8Array(width * height);
+    const rowsPerChunk = Math.max(1, Math.floor(height / 50));
+    const traceStartTime = Date.now();
+    const TRACE_TIMEOUT_MS = 15000;
+
+    for (let y = 0; y < height; y++) {
+      if (Date.now() - traceStartTime > TRACE_TIMEOUT_MS) {
+        console.warn("Trace timeout, using contours found so far");
+        break;
+      }
+      for (let x = 0; x < width; x++) {
+        const idx = y * width + x;
+        if (binaryData[idx] === 1 && traced[idx] === 0) {
+          const contour = this.traceMooreNeighbor(binaryData, traced, width, height, x, y);
+          if (contour.length >= 3) {
+            allContours.push(contour);
+            contour.forEach(p => traced[p.y * width + p.x] = 1);
+          }
+        }
+      }
+      
+      if (y % rowsPerChunk === 0) {
+        const pct = 10 + Math.round((y / height) * 40);
+        this.updateProgress(pct, `Tracing contours... ${Math.round(y / height * 100)}%`);
+        await this.yieldToUI();
+      }
+    }
+
+    if (allContours.length === 0) throw new Error('No object detected. Try lowering Threshold or toggling Invert.');
+
+    this.updateProgress(55, `Found ${allContours.length} contours. Filtering...`);
+    await this.yieldToUI();
+
+    const filteredContours = allContours.filter(c => calculateContourArea(c) >= speckleMin);
+    if (filteredContours.length === 0) throw new Error('All contours filtered as speckle. Lower Speckle Filter value.');
+
+    let finalContours = filteredContours;
+    if (renderingMode === 'outer') {
+      const hierarchy = buildContourHierarchy(filteredContours);
+      const outerIndices = [];
+      for (let i = 0; i < filteredContours.length; i++) {
+        if (hierarchy.depth[i] === 0) outerIndices.push(i);
+      }
+      if (outerIndices.length > 0) {
+        const largestIdx = outerIndices.reduce((best, idx) =>
+          calculateContourArea(filteredContours[idx]) > calculateContourArea(filteredContours[best]) ? idx : best
+        , outerIndices[0]);
+        finalContours = [filteredContours[largestIdx]];
+      } else {
+        finalContours = [filteredContours.reduce((a, b) =>
+          calculateContourArea(a) > calculateContourArea(b) ? a : b
+        )];
+      }
+    }
+
+    this.updateProgress(65, 'Computing winding direction...');
+    await this.yieldToUI();
+
+    finalContours = applyWindingDirection(finalContours);
+    
+    if (scale !== 1) {
+      for (const contour of finalContours) {
+        for (let i = 0; i < contour.length; i++) {
+          contour[i] = { x: contour[i].x / scale, y: contour[i].y / scale };
+        }
+      }
+    }
+
+    this.updateProgress(75, 'Simplifying paths...');
+    await this.yieldToUI();
+
+    const d = contourToPathD(finalContours, useBezier, epsilon);
+
+    if (!d) throw new Error('Resulting path is empty.');
+
+    this.updateProgress(90, 'Optimizing output...');
+    await this.yieldToUI();
+
+    const precision = parseInt(document.getElementById('precision').value);
+    const optimizedD = this.optimizePath(d, precision);
+
+    this.currentShape = { 
+      name, 
+      d: optimizedD, 
+      w: img.width, 
+      h: img.height,
+      renderingMode,
+      strokeWeight: 1,
+      curveSmoothing: smoothing,
+      lineStyle: 'solid',
+      fillRule: detectFillRule(optimizedD)
+    };
+    
+    this.updateProgress(100, 'Done!');
+    await this.yieldToUI();
+    
+    this.renderPreview(this.currentShape);
+    this.generateCode(this.currentShape);
+    this.addToHistory(this.currentShape);
+  }
+
+  updateProgress(pct, text) {
+    const container = document.getElementById('progressContainer');
+    const fill = document.getElementById('progressFill');
+    const textEl = document.getElementById('progressText');
+    container.style.display = 'block';
+    fill.style.width = `${pct}%`;
+    textEl.textContent = text || `${pct}%`;
+  }
+
+  hideProgress() {
+    document.getElementById('progressContainer').style.display = 'none';
+  }
+
+  yieldToUI() {
+    return new Promise(resolve => setTimeout(resolve, 0));
+  }
+
+  traceMooreNeighbor(binaryData, traced, width, height, startX, startY) {
+    const points = [];
+    let currX = startX;
+    let currY = startY;
+    
+    const dx = [-1, 0, 1, 1, 1, 0, -1, -1];
+    const dy = [-1, -1, -1, 0, 1, 1, 1, 0];
+
+    let dir = 0; 
+    for (let i = 0; i < 8; i++) {
+        let nx = currX + dx[i];
+        let ny = currY + dy[i];
+        if (nx >= 0 && nx < width && ny >= 0 && ny < height && binaryData[ny * width + nx] === 1 && traced[ny * width + nx] === 0) {
+            dir = (i + 5) % 8;
+            break;
+        }
+    }
+    
+    const initialDir = dir;
+    const maxPoints = width * height;
+    let count = 0;
+    let returnedToStart = false;
+
+    while (count < maxPoints) {
+      points.push({x: currX, y: currY});
+
+      let found = false;
+      for (let i = 0; i < 8; i++) {
+        let nextDir = (dir + i) % 8;
+        let nextX = currX + dx[nextDir];
+        let nextY = currY + dy[nextDir];
+
+        if (nextX >= 0 && nextX < width && nextY >= 0 && nextY < height) {
+          if (binaryData[nextY * width + nextX] === 1 && traced[nextY * width + nextX] === 0) {
+            currX = nextX;
+            currY = nextY;
+            dir = (nextDir + 5) % 8;
+            found = true;
+            break;
+          }
+        }
+      }
+
+      if (!found) break;
+      count++;
+      
+      if (currX === startX && currY === startY && count >= 8 && dir === initialDir) {
+        returnedToStart = true;
+        break;
+      }
+    }
+
+    if (!returnedToStart && points.length > 1) {
+      points.push({x: startX, y: startY});
+    }
+
+    return points;
+  }
+
+  optimizePath(d, precision) {
+    const p = parseInt(precision);
+    return d.replace(/([+-]?\d*\.\d+)/g, (match) => {
+      return parseFloat(match).toFixed(p);
+    });
+  }
+
+  blobToImage(source) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const needsRevoke = typeof source !== 'string';
+      const src = needsRevoke ? URL.createObjectURL(source) : source;
+      img.onload = () => { if (needsRevoke) URL.revokeObjectURL(src); resolve(img); };
+      img.onerror = () => { if (needsRevoke) URL.revokeObjectURL(src); reject(new Error('Failed to load image')); };
+      img.src = src;
+    });
+  }
+
+  // --- UI RENDERING (T2-L: XSS-safe) ---
+
+  renderPreview(shape) {
+    const canvas = document.getElementById('previewCanvas');
+    const svg = document.getElementById('previewSvg');
+    const meta = document.getElementById('previewMeta');
+    const dirIndicator = document.getElementById('directionIndicator');
+
+    canvas.style.display = 'none';
+    svg.style.display = 'block';
+
+    const containerSize = 350;
+    const scale = Math.min(containerSize / shape.w, containerSize / shape.h) * 0.9;
+
+    svg.setAttribute('viewBox', `0 0 ${shape.w} ${shape.h}`);
+    svg.style.width = `${shape.w * scale}px`;
+    svg.style.height = `${shape.h * scale}px`;
+    
+    let fill = "#000";
+    let stroke = "none";
+    let strokeWidth = 0;
+    let dashArray = "none";
+    let fillRuleAttr = "";
+
+    if (shape.renderingMode === 'filled') {
+      fill = "#000";
+      stroke = "none";
+      fillRuleAttr = shape.fillRule || 'nonzero';
+    } else if (shape.renderingMode === 'outer') {
+      fill = "none";
+      stroke = "#000";
+      strokeWidth = shape.strokeWeight;
+    } else if (shape.renderingMode === 'full') {
+      fill = "none";
+      stroke = "#000";
+      strokeWidth = shape.strokeWeight;
+      dashArray = shape.lineStyle === 'dashed' ? '5,5' : 'none';
+    }
+
+    // T2-L: XSS-safe - use setAttribute instead of innerHTML
+    const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    pathEl.setAttribute("d", shape.d);
+    pathEl.setAttribute("fill", fill);
+    pathEl.setAttribute("stroke", stroke);
+    pathEl.setAttribute("stroke-width", strokeWidth);
+    pathEl.setAttribute("stroke-dasharray", dashArray);
+    if (fillRuleAttr) pathEl.setAttribute("fill-rule", fillRuleAttr);
+    
+    svg.innerHTML = '';
+    svg.appendChild(pathEl);
+
+    // T3-N: Direction indicator
+    const fillRule = shape.fillRule || 'nonzero';
+    if (fillRule === 'evenodd') {
+      dirIndicator.style.display = 'block';
+      dirIndicator.textContent = 'fill-rule: evenodd (has holes)';
+    } else {
+      dirIndicator.style.display = 'none';
+    }
+
+    meta.innerHTML = `
+      <span>${shape.name.toUpperCase()}</span>
+      <span>${Math.round(shape.w)}x${Math.round(shape.h)}</span>
+      <span>${shape.d.length} chars</span>
+      ${shape.offsetX || shape.offsetY ? `<span>normalized</span>` : ''}
+    `;
+  }
+
+  generateCode(shape) {
+    const fillRule = shape.fillRule || 'nonzero';
+    
+    const jsCode = `${shape.name}: {
+  d: "${shape.d}",
+  w: ${shape.w},
+  h: ${shape.h},
+  style: {
+    fill: "${shape.renderingMode === 'filled' ? '#000' : 'none'}",
+    stroke: "${shape.renderingMode === 'filled' ? 'none' : '#000'}",
+    strokeWidth: ${shape.strokeWeight},
+    dasharray: "${shape.lineStyle === 'dashed' ? '5,5' : 'none'}",
+    fillRule: "${fillRule}"
+  }
+},`;
+    document.getElementById('outputJs').textContent = jsCode;
+
+    const fill = shape.renderingMode === 'filled' ? '#000' : 'none';
+    const stroke = shape.renderingMode === 'filled' ? 'none' : '#000';
+    const strokeWidth = shape.strokeWeight;
+    const dashArray = shape.lineStyle === 'dashed' ? '5,5' : 'none';
+    
+    const fillRuleAttr = shape.renderingMode === 'filled' ? ` fill-rule="${fillRule}"` : '';
+    
+    const svgCode = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${shape.w} ${shape.h}">
+  <path d="${shape.d}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-dasharray="${dashArray}"${fillRuleAttr} />
+</svg>`;
+    document.getElementById('outputSvg').textContent = svgCode;
+  }
+
+  copyToClipboard(type) {
+    const code = type === 'js' 
+      ? document.getElementById('outputJs').textContent 
+      : document.getElementById('outputSvg').textContent;
+    
+    if (!code || code.includes('will appear here')) return;
+
+    navigator.clipboard.writeText(code).then(() => {
+      const btn = type === 'js' ? document.getElementById('copyJsBtn') : document.getElementById('copySvgBtn');
+      const original = btn.textContent;
+      btn.textContent = 'Copied';
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    });
+  }
+
+  // T2-I: SVG Download
+  downloadSVG() {
+    const svgCode = document.getElementById('outputSvg').textContent;
+    if (svgCode.startsWith('/*')) {
+      this.showStatus('No SVG to download. Process a shape first.', 'warn');
+      return;
+    }
+    
+    const blob = new Blob([svgCode], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${this.currentShape?.name || 'shape'}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    this.showStatus('SVG file downloaded!', 'success');
+  }
+
+  // T3-O: Shape History
+  addToHistory(shape) {
+    this.history.unshift({
+      name: shape.name,
+      d: shape.d,
+      w: shape.w,
+      h: shape.h,
+      renderingMode: shape.renderingMode,
+      strokeWeight: shape.strokeWeight,
+      lineStyle: shape.lineStyle,
+      fillRule: shape.fillRule || 'nonzero',
+      timestamp: Date.now()
+    });
+    
+    if (this.history.length > 20) this.history.pop();
+    this.renderHistory();
+  }
+
+  renderHistory() {
+    const container = document.getElementById('historyList');
+    if (this.history.length === 0) {
+      container.innerHTML = '<div class="history-empty">No shapes processed yet</div>';
+      return;
+    }
+    
+    const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    
+    container.innerHTML = '<div class="history-list">' + this.history.map((item, idx) => `
+      <div class="history-item" onclick="window.processor.loadFromHistory(${idx})">
+        <span class="h-name">${esc(item.name.toUpperCase())}</span>
+        <span class="h-meta">${Math.round(item.w)}x${Math.round(item.h)} · ${esc(item.renderingMode)}</span>
+        <button class="h-delete" onclick="event.stopPropagation(); window.processor.removeFromHistory(${idx})">x</button>
+      </div>
+    `).join('') + '</div>';
+  }
+
+  loadFromHistory(idx) {
+    const item = this.history[idx];
+    if (!item) return;
+    
+    this.currentShape = {
+      name: item.name,
+      d: item.d,
+      w: item.w,
+      h: item.h,
+      renderingMode: item.renderingMode,
+      strokeWeight: item.strokeWeight,
+      lineStyle: item.lineStyle,
+      fillRule: item.fillRule
+    };
+    
+    this.renderPreview(this.currentShape);
+    this.generateCode(this.currentShape);
+    this.showStatus(`Loaded ${item.name} from history`, 'info');
+  }
+
+  removeFromHistory(idx) {
+    this.history.splice(idx, 1);
+    this.renderHistory();
+  }
+
+  showStatus(msg, type) {
+    const el = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  toggleLoading(show) {
+    document.getElementById('loader').style.display = show ? 'flex' : 'none';
+    document.getElementById('processBtn').disabled = show;
+    document.getElementById('processBtn').style.opacity = show ? '0.5' : '1';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  window.processor = new MXDProcessor();
+});
+
+</script>
+</body>
+</html>

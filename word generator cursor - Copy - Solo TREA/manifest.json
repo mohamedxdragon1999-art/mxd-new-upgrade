@@ -1,0 +1,51 @@
+{
+  "name": "MXD Supreme Pro - Word Search Generator",
+  "short_name": "MXD Supreme",
+  "description": "Enterprise-grade word search puzzle generator with KDP publishing tools, offline-first architecture, and AI-powered niche discovery.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%236366f1'/><text x='96' y='130' font-size='120' text-anchor='middle' fill='white'>🔤</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='96' fill='%236366f1'/><text x='256' y='360' font-size='320' text-anchor='middle' fill='white'>🔤</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "education", "utilities"],
+  "screenshots": [],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "shortcuts": [
+    {
+      "name": "New Puzzle",
+      "short_name": "New",
+      "description": "Generate a new word search puzzle",
+      "url": "./index.html?action=new",
+      "icons": [{"src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect width='96' height='96' rx='16' fill='%2310b981'/><text x='48' y='65' font-size='60' text-anchor='middle' fill='white'>+</text></svg>", "sizes": "96x96"}]
+    },
+    {
+      "name": "Export PDF",
+      "short_name": "Export",
+      "description": "Export puzzles to KDP-ready PDF",
+      "url": "./index.html?action=export",
+      "icons": [{"src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect width='96' height='96' rx='16' fill='%236366f1'/><text x='48' y='65' font-size='60' text-anchor='middle' fill='white'>📄</text></svg>", "sizes": "96x96"}]
+    },
+    {
+      "name": "KDP Niche Finder",
+      "short_name": "Niche",
+      "description": "Discover profitable KDP niches",
+      "url": "./index.html?action=niche",
+      "icons": [{"src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect width='96' height='96' rx='16' fill='%23f59e0b'/><text x='48' y='65' font-size='60' text-anchor='middle' fill='white'>🔍</text></svg>", "sizes": "96x96"}]
+    }
+  ]
+}
